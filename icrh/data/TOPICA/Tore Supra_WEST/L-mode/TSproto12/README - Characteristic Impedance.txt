@@ -1,0 +1,1 @@
+TS Proto 12 : port characterictic impedance is Z0=46.7 Ohm

@@ -1,0 +1,1 @@
+The L-mode density profiles come from the Tore Supra pulse #40574
