@@ -9,7 +9,7 @@ import skrf as rf
 import numpy as np
 import scipy.optimize
 
-class ConjugateT(object):
+class ConjugateT():
     """
     ConjugateT class.
     
@@ -53,11 +53,13 @@ class ConjugateT(object):
             # window                : port0 30 ohm ; port1 40 Ohm 
             #    1-imp_tr-0 -- 1-window-0 ==> 1:5 Ohm -- 0:30 Ohm
             window_imptrans = rf.connect(window, 1, imp_tr, 0)
+
+            # bridge port0: input
+            window_imptrans_bridge = rf.connect(window_imptrans, 1, bridge, 0)         
         else:
-            pass # TODO
-        
-        # bridge port0: input
-        window_imptrans_bridge = rf.connect(window_imptrans, 1, bridge, 0)        
+            # no impedance_transformer nor window
+            window_imptrans_bridge = bridge
+               
         self.circuit = window_imptrans_bridge
         
         # set various properties
@@ -67,12 +69,12 @@ class ConjugateT(object):
         self.set_capacitors(C)    
         
         # create the network (=circuit+capacitors)
-        self.network = self.get_network() 
+        #self.network = self.get_network() 
         self.network.name = name
 
     def __repr__(self):
-        return 'Conjugate-T network with CB={} pF and CH={} pF'\
-                .format(self.CB*1e12, self.CH*1e12)
+        return 'Conjugate-T network with CB={} pF and CH={} pF. Network: {}'\
+                .format(self.CB*1e12, self.CH*1e12, self.circuit)
         
     def set_capacitors(self, C):
         """
@@ -102,7 +104,9 @@ class ConjugateT(object):
         capa_H = self._capacitor_network(self.CH, z0=self.z0[1])
         capa_B = self._capacitor_network(self.CB, z0=self.z0[2])
         # return the skrf Network object
-        return(rf.connect(rf.connect(self.circuit,1, capa_H,0),1, capa_B,0))
+        # 1-CH-0 ** 1 - 0
+        # 1-CB-0 ** 2 |
+        return(rf.connect(rf.connect(self.circuit,1, capa_H,0),2, capa_B,0))
     
         
     def load(self, Z_plasma):
@@ -203,7 +207,7 @@ class ConjugateT(object):
         return(capacitor)    
         
         
-    def match(self, C0=[60e-12, 120e-12], f_match=50e6, z_load=1.0+30*1j):
+    def match(self, C0=[60e-12, 120e-12], f_match=50e6, z_load=1.0+30*1j, z_match=30+0*1j):
         """
         Match the resonant loop for a prescribed load impedance at a specified frequency
         
@@ -220,11 +224,11 @@ class ConjugateT(object):
         ----------
         sol: :class: 'scipy.optimize.solution'
         """
-        sol = scipy.optimize.root(self._optim_fun_single_RL, C0, args=(f_match, z_load) ) # 60pF as a starting point
+        sol = scipy.optimize.root(self._optim_fun_single_RL, C0, args=(f_match, z_load, z_match) ) # 60pF as a starting point
         self.set_capacitors(sol.x)            
         return(sol)
     
-    def _optim_fun_single_RL(self, C, f_match, z_load):
+    def _optim_fun_single_RL(self, C, f_match, z_load, z_match):
         """
         Return the match conditions at the
         C=[C1,C2]
@@ -241,7 +245,7 @@ class ConjugateT(object):
         
         Z11_re = loaded_RL.z_re[index_f_match].squeeze() # 100 = ~ 50 MHz (mid-band bins point)
         Z11_im = loaded_RL.z_im[index_f_match].squeeze()
-        y = [Z11_re - 30, Z11_im - 0]
+        y = [Z11_re - np.real(z_match), Z11_im - np.imag(z_match)]
     
         return(y)    
         
