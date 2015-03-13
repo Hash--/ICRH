@@ -17,6 +17,7 @@ import numpy as np
 pylab.rcParams['figure.figsize'] = (10.0, 8.0)
 pylab.rcParams['font.size'] = 16
 
+from matplotlib.pylab import *
 
 
 # There is three profiles 
@@ -26,24 +27,36 @@ R2_H, ne2_H = np.loadtxt('Ne_prof_WEST_Hmode_01_LAD9_Rsep_293.txt', skiprows=1, 
 R3_H, ne3_H = np.loadtxt('Ne_prof_WEST_Hmode_01_LAD12_Rsep_293.txt', skiprows=1, unpack=True)
 
 figure(1)
-plot(R1_H, ne1_H, R2_H, ne2_H, R3_H, ne3_H, lw=2)
+clf()
+plot(R1_H, ne1_H/1e20, R2_H, ne2_H/1e20, R3_H, ne3_H/1e20, lw=3)
 xlabel('R [m]')
-ylabel('$n_e$ [$m^{-3}$]')
+ylabel('$n_e$ [$10^{20} \, m^{-3}$]')
 grid(True)
-legend(('$\overline{n}_e=6.10^{19} m^{-2}$', '$\overline{n}_e=9.10^{19} m^{-2}$', '$\overline{n}_e=12.10^{19} m^{-2}$'))
+legend(('$\overline{n}_e=6.10^{19} m^{-2}$', '$\overline{n}_e=9.10^{19} m^{-2}$', '$\overline{n}_e=12.10^{19} m^{-2}$'),
+       loc='best')
 title('WEST H-mode Density profile')
-axvline(x=2.93, ymin=0, ymax=2e20, linestyle='--', color='k') # separatrix
+# separatrix
+axvline(x=2.93, ymin=0, ymax=2e20, linestyle='--', color='k', lw=2) 
+annotate('Separatrix', (2.93, 1.3), xytext=(2.8,1.4), 
+         arrowprops=dict(arrowstyle='->', connectionstyle="angle3"))
 
 # ICRH limiter radial location 
 gca().add_patch(Rectangle((2.890, 0), 0.170, 1.5e20, facecolor='r', alpha=0.2)) # (x, y), width, height
 
 # Proposed Antenna Limiter Radial Location
-axvline(x=2.95, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=2) 
-axvline(x=2.975, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=2) 
-axvline(x=3.00, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=2) 
+axvline(x=2.95, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=3) 
+axvline(x=2.975, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=3) 
+axvline(x=3.00, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=3) 
+annotate('Antenna\nlocations', (2.95, 1.2), xytext=(3.01,1.35), 
+         arrowprops=dict(arrowstyle='->', connectionstyle="angle3", ls='dashdot', lw=2))
+annotate('', (2.975, 1.1), xytext=(3.04,1.35),
+         arrowprops=dict(arrowstyle='->', connectionstyle="angle3", ls='dashdot', lw=2))
+annotate('', (3.00, 1.0), xytext=(3.05,1.35),
+         arrowprops=dict(arrowstyle='->', connectionstyle="angle3", ls='dashdot', lw=2))         
+ylim(0, 1.5)
+xlim(2.55, 3.08)
 
-
-
+savefig('WEST_H-mode_density_profiles.png', dpi=600)
 #
 # L-mode
 #
@@ -52,6 +65,7 @@ R2_L, ne2_L = np.loadtxt('Ne_prof_WEST_Lmode_02_LAD5_4_Rsep_293.txt', skiprows=1
 R3_L, ne3_L = np.loadtxt('Ne_prof_WEST_Lmode_02_LAD8_4_Rsep_293.txt', skiprows=1, unpack=True)
 
 fig2 = figure(2)
+clf()
 plot(R1_L, ne1_L, R2_L, ne2_L, R3_L, ne3_L, lw=2)
 xlabel('R [m]')
 ylabel('$n_e$ [$m^{-3}$]')
@@ -77,6 +91,7 @@ ne_LAD9  = ne2_H[:idx[0][0]+1]
 ne_LAD12 = ne3_H[:idx[0][0]+1]
  
 figure(3)
+clf()
 plot(R_export, ne_LAD6, R_export, ne_LAD9, R_export, ne_LAD12, lw=2)
 
 xlabel('R [m]')
@@ -112,12 +127,13 @@ R_Te = data['RR']
 Te = data['Te'].transpose()
 
 figure(5)
+clf()
 # Take the same value than the min to fill the SOL up to R=3.0 m
 R_Te2 = np.append(R_Te, 3)
 Te2 = np.append(Te, np.min(Te))
 
-plot(R_Te2, Te2, lw=2)
-plot(R_Te, Te, lw=2) # superpose the given profile
+plot(R_Te2, Te2, lw=3)
+plot(R_Te, Te, lw=3) # superpose the given profile
 xlabel('R [m]')
 ylabel('Te [eV]')
 grid(True)
@@ -132,7 +148,8 @@ axvline(x=2.95, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=2)
 axvline(x=2.975, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=2) 
 axvline(x=3.00, ymin=0, ymax=2e20, linestyle='-.', color='k', lw=2) 
 
-
+savefig('WEST_H-mode_temperature_profile.png', dpi=600)
+xlim(2.55, 3.08)
 
 Te_resample = np.interp(R_export, R_Te2, Te2)
 np.savetxt('TOPICA_WEST_H-mode_Te.txt', np.c_[R_export, Te_resample], 
