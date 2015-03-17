@@ -9,7 +9,7 @@ import skrf as rf
 import numpy as np
 import scipy.optimize
 
-class ConjugateT():
+class ConjugateT(object):
     """
     ConjugateT class.
     
@@ -24,7 +24,7 @@ class ConjugateT():
     
     """
 
-    def __init__(self, bridge=None, imp_tr=None, window=None, C=[60e-12, 60e-12], capacitor_model='equivalent', name='CT'):
+    def __init__(self, bridge, imp_tr=None, window=None, C=[60e-12, 60e-12], capacitor_model='equivalent', name='CT'):
         """
         Resonant Loop Constructor.
                 
@@ -46,8 +46,8 @@ class ConjugateT():
                         
         """
         assert len(C) == 2, 'C=[CH, CB] should be of length 2.'
-        
-        if isinstance(window, rf.network.Network) and isinstance(imp_tr, rf.network.Network):
+                
+        if isinstance(window, rf.Network) and isinstance(imp_tr, rf.Network):
             # creates the circuit=window + impedance transformer + bridge
             # impedance_transformer : port0 40 Ohm ; port1 5 Ohm 
             # window                : port0 30 ohm ; port1 40 Ohm 
@@ -66,17 +66,23 @@ class ConjugateT():
         self.capacitor_model = capacitor_model
         self.frequency = window_imptrans_bridge.frequency
         self.z0 = window_imptrans_bridge.z0[0][:]        
-        self.set_capacitors(C)    
+        self.C = C 
         
         # create the network (=circuit+capacitors)
-        #self.network = self.get_network() 
-        self.network.name = name
+        #self = self.get_network() 
+        self.name = name
+        
 
     def __repr__(self):
-        return 'Conjugate-T network with CB={} pF and CH={} pF. Network: {}'\
-                .format(self.CB*1e12, self.CH*1e12, self.circuit)
-        
-    def set_capacitors(self, C):
+        return 'Conjugate-T network with CH={} pF and CB={} pF. Network: {}'\
+                .format(self._C[0]*1e12, self._C[1]*1e12, self.circuit)
+
+    @property
+    def C(self):
+        return self._C
+    
+    @C.setter
+    def C(self, C):
         """
         Set the two capacitors values.
         
@@ -86,9 +92,8 @@ class ConjugateT():
         
         """
         assert len(C) == 2, 'C=[CH, CB] should be of length 2.'
-                
-        self.CH = C[0]
-        self.CB = C[1]
+        
+        self._C = C        
         
         # update the network
         self.network = self.get_network() 
@@ -101,8 +106,8 @@ class ConjugateT():
         The returned Network is thus a 3-ports Network, where port#0 is 
         the input port and port#1 and #2 are the load ports.
         """
-        capa_H = self._capacitor_network(self.CH, z0=self.z0[1])
-        capa_B = self._capacitor_network(self.CB, z0=self.z0[2])
+        capa_H = self._capacitor_network(self.C[0], z0=self.z0[1])
+        capa_B = self._capacitor_network(self.C[1], z0=self.z0[2])
         # return the skrf Network object
         # 1-CH-0 ** 1 - 0
         # 1-CB-0 ** 2 |
@@ -225,7 +230,7 @@ class ConjugateT():
         sol: :class: 'scipy.optimize.solution'
         """
         sol = scipy.optimize.root(self._optim_fun_single_RL, C0, args=(f_match, z_load, z_match) ) # 60pF as a starting point
-        self.set_capacitors(sol.x)            
+        self.C = sol.x            
         return(sol)
     
     def _optim_fun_single_RL(self, C, f_match, z_load, z_match):
@@ -237,7 +242,7 @@ class ConjugateT():
         z_load 
         
         """
-        self.set_capacitors(C)
+        self.C = C#(self, C)
         
         loaded_RL = self.load(z_load)
         

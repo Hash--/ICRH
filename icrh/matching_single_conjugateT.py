@@ -5,16 +5,18 @@ Created on Tue Mar 10 21:18:23 2015
 Matching a single conjugate-T.
 
 
- _
+ _ GD
  |
- Z1
- |__C1__
-        |___ Z_T
-  __C2__|  
+ [Z1]
+ |__[C1]__
+          |
+          |-- Z_T ----[imp transf]----[window]---
+  __[C2]__|  
  |
- Z2
+ [Z2]
  |
- -
+ - GD
+
 
 @author: J.Hillairet
 """
@@ -43,10 +45,11 @@ window = rf.io.hfss_touchstone_2_network(\
 CT = ConjugateT(bridge, impedance_transformer, window)
 #CT = ConjugateT(bridge, None, None)
 
+
 sol=CT.match(C0=[100e-12, 20e-12], f_match=f_match, z_load=Z_load, z_match=Z_match)
 print(sol.x*1e12)
 
-CT.set_capacitors([60e-12, 60e-12])
-CT.set_capacitors(sol.x)
+CT.C = [60e-12, 60e-12]
+CT.C = sol.x
 
 CT.load(Z_load).plot_s_db(show_legend=False)
