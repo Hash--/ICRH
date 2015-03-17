@@ -80,7 +80,7 @@ grid()
 # Calculating Voltage and Current on the Circuit
 # here we start from the source where we knows the input voltage and
 # current and go toward the load
-f = 55e6
+f = 60e6
 # copper conductivity
 sigma = 4.4e7#5.8e7 # S/m
 
@@ -112,16 +112,16 @@ for idx, l1_val in enumerate(l1):
 fig2=figure(2)
 fig2.clear()
 
-subplot(3,1,1)
+ax1=subplot(3,1,1)
 title('f='+str(f/1e6)+' MHz')
 plot(l2, abs(V2)/1e3, 'k', l2[-1]+l1, abs(V1)/1e3, 'k', lw=2)
-xlabel('L [m]')
+#xlabel('L [m]')
 ylabel('V [kV]')
 grid(True)
 
-subplot(3,1,2) 
+ax2=subplot(3,1,2, sharex=ax1) 
 plot(l2, abs(I2)/1e3, 'k', l2[-1]+l1, abs(I1)/1e3, 'k', lw=2)
-xlabel('L [m]')
+#xlabel('L [m]')
 ylabel('I [kA]')
 grid(True)
 
@@ -147,7 +147,7 @@ P_l2_outer = Rs * abs(I2)**2 / (4.*pi) * (2./Stage2_Dout)
 #xlabel('L [m]')
 #ylabel('Loss Density [$W/m$]')
       
-subplot(3,1,3)
+ax3=subplot(3,1,3, sharex=ax1)
 plot( append(l2, l1+l2[-1]), append(P_l2_inner, P_l1_inner)/(2.*pi*Stage2_Dint/2)/1e3, '-',  
       append(l2, l1+l2[-1]), append(P_l2_outer, P_l1_outer)/(2.*pi*Stage2_Dout/2)/1e3, '--', 
       linewidth=2 )
