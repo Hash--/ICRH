@@ -5,6 +5,8 @@ Created on Wed Mar  5 16:57:00 2014
 @author: hash
 """
 import numpy as np
+import skrf as rf        
+import scipy as sp
         
 class ResonantDoubleLoop(object):
 
@@ -25,9 +27,17 @@ class ResonantDoubleLoop(object):
         self.CT1 = CT1
         self.CT2 = CT2
         self.plasma = plasma
-        self.set_capacitors(C)
-        
-    def set_capacitors(self, C):
+        self.C = C
+    
+    @property
+    def C(self):
+        """
+        Returns the capacitor set values
+        """
+        return self._C
+    
+    @C.setter
+    def C(self, C):
         """
         Set the capacitor values
         
@@ -36,9 +46,11 @@ class ResonantDoubleLoop(object):
         C=[C1H, C1B, C2H, C2B]: 4 elements array
             Capacitor values in Farad
         """
-        self.C = C
-        self.CT1.set_capacitors([self.C[0], self.C[1]])
-        self.CT2.set_capacitors([self.C[2], self.C[3]])
+        self._C = C
+        self.CT1.C = [self.C[0], self.C[1]]
+        self.CT2.C = [self.C[2], self.C[3]]
+        # update the network
+        self.network = self.get_network()
         
     def get_network(self):
         '''
@@ -79,8 +91,8 @@ class ResonantDoubleLoop(object):
         """
         success = False
         while success == False:
-            C0 = 12e-12 + scipy.random.rand(4)*(120e-12 - 12e-12)
-            sol = scipy.optimize.root(self._match_function, C0, args=(a_in, f_match, Z_match))
+            C0 = 12e-12 + sp.random.rand(4)*(120e-12 - 12e-12)
+            sol = sp.optimize.root(self._match_function, C0, args=(a_in, f_match, Z_match))
             success = sol.success
             
             print(success, sol.x/1e-12)
@@ -90,7 +102,9 @@ class ResonantDoubleLoop(object):
                     success = False
                     print('Bad solution found (out of range capacitor) ! Re-doing...')
     
-        print(sol.x/1e-12)
+        print('Solution found : C={}'.format(sol.x/1e-12))
+        # Apply the solution         
+        self.C = sol.x
         return(sol)        
         
     def _match_function(self, C, a_in, f_match, Z_match):
@@ -115,7 +129,7 @@ class ResonantDoubleLoop(object):
              Matching criteria.
         
         """
-        self.set_capacitors(C)
+        self.C = C
         
         # create the antenna network with the given capacitor values
         network = self.get_network()
@@ -238,6 +252,15 @@ class ResonantDoubleLoop(object):
         b=tensordot(S, a_in, axes=1)
 
         self.CT1.network.z #
+        
+        S1 = np.squeeze(self.CT1.network.s)
+        
+        # For all frequencies
+        # Deduces the b scattering parameters from a prescribed excitation a
+        # Deduces the current from b
+        for idx,f in enumerate(self.CT1.network.frequency):
+            b = self.CT1.network.s.dot(a)
+            
     
     def get_voltages(self, a_in):
         """
