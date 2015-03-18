@@ -14,6 +14,8 @@ Assumes %pylab environment
 """
 
 import numpy as np
+import scipy as sp
+
 pylab.rcParams['figure.figsize'] = (10.0, 8.0)
 pylab.rcParams['font.size'] = 16
 
@@ -26,11 +28,24 @@ R1_H, ne1_H = np.loadtxt('Ne_prof_WEST_Hmode_01_LAD6_Rsep_293.txt', skiprows=1, 
 R2_H, ne2_H = np.loadtxt('Ne_prof_WEST_Hmode_01_LAD9_Rsep_293.txt', skiprows=1, unpack=True)
 R3_H, ne3_H = np.loadtxt('Ne_prof_WEST_Hmode_01_LAD12_Rsep_293.txt', skiprows=1, unpack=True)
 
+
+# Te profile
+# H-mode Te profile from CRONOS
+data=sp.io.loadmat('Te_WEST_MPHIMNHH_HR_eq_data.mat')
+R_Te = data['RR']
+Te = data['Te'].transpose()
+
 figure(1)
 clf()
-plot(R1_H, ne1_H/1e20, R2_H, ne2_H/1e20, R3_H, ne3_H/1e20, lw=3)
-xlabel('R [m]')
-ylabel('$n_e$ [$10^{20} \, m^{-3}$]')
+plot(R1_H, ne1_H/1e20, 
+     R2_H, ne2_H/1e20, '--', 
+     R3_H, ne3_H/1e20, '-.', lw=4)
+#ax2 = gca().twinx()
+#ax2.plot(R_Te, Te/1e3)
+#ax2.set_ylabel('$T_e$ [keV]')
+ 
+xlabel('R [m]', fontsize=18)
+ylabel('$n_e$ [$10^{20} \, m^{-3}$]', fontsize=18)
 grid(True)
 legend(('$\overline{n}_e=6.10^{19} m^{-2}$', '$\overline{n}_e=9.10^{19} m^{-2}$', '$\overline{n}_e=12.10^{19} m^{-2}$'),
        loc='best')
@@ -119,12 +134,7 @@ np.savetxt('TOPICA_WEST_H-mode_ne_LAD12_Rsep_2.93m.txt', np.c_[R_export, ne_LAD1
            header=''' WEST H-mode density profile - 20/06/2014 \n Line Average Density = 12e19 m^-2 \n R [m] \t ne [m-3]''' )
 
 
-# Te profile
-import scipy as sp
-# H-mode Te profile from CRONOS
-data=sp.io.loadmat('Te_WEST_MPHIMNHH_HR_eq_data.mat')
-R_Te = data['RR']
-Te = data['Te'].transpose()
+
 
 figure(5)
 clf()

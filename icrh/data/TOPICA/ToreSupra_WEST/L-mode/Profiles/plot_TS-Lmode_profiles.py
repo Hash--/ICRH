@@ -47,7 +47,8 @@ grid(True);
 
 labels=[]
 for idx in range(8):
-    labels.append('$R_{cutoff}$='+str(Rcutoff[idx])+' m')
+#    labels.append('$R_{cutoff}$='+str(Rcutoff[idx])+' m')
+    labels.append('$d_{\mathrm{cutoff}}$='+str((R_Q1-Rcutoff[idx])*100)+' cm')
 legend(labels, loc='best')    
 
 annotate('Antenna\nradial location\n R='+str(R_Q1)+' m', (R_Q1, 30), xytext=(3.14, 35), size=16, \
