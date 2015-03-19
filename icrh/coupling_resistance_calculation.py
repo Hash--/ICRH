@@ -16,27 +16,33 @@ from scipy.constants import c, pi
 #
 # TOPICA impedance matrix
 #
+
+
 Rc_vec = []
-# WEST Final model
 for idx in range(1,9):
 
-#    # TS Classical
-#    fn_TOPICA = './data/TOPICA/ToreSupra_WEST/L-mode/TS_Classical_48MHz/Zs_TS9a_Profile'+str(idx)+'.txt'
-#    z0_TOPICA = 20
-#    length = 0.149 # m
-#    f = 48e6 # Hz
+    #    # TS Classical
+    #    fn_TOPICA = './data/TOPICA/ToreSupra_WEST/L-mode/TS_Classical_48MHz/Zs_TS9a_Profile'+str(idx)+'.txt'
+    #    z0_TOPICA = 20
+    #    length = -(0.149 - 20.6e-3) # m
+    #    f = 48e6 # Hz
     
-#    # Proto2007
-#    fn_TOPICA = './data/TOPICA/ToreSupra_WEST/L-mode/TS_Proto2007_48MHz/Zs_TSproto1_Profile'+str(idx)+'.txt'
-#    z0_TOPICA = 23.8
-#    length = 0.122 # m
-#    f = 48e6 # Hz
-
-    fn_TOPICA = './data/TOPICA/ToreSupra_WEST/L-mode/TSproto12/Zs_TSproto12_48MHz_Profile'+str(idx)+'.txt'
+    #    # Proto2007
+    #    fn_TOPICA = './data/TOPICA/ToreSupra_WEST/L-mode/TS_Proto2007_48MHz/Zs_TSproto1_Profile'+str(idx)+'.txt'
+    #    z0_TOPICA = 23.8
+    #    length = -(0.122-25e-3) # m
+    #    f = 48e6 # Hz
+    
+     # WEST Final model
+    fn_TOPICA = './data/TOPICA/ToreSupra_WEST/L-mode/TSproto12/Zs_TSproto12_55MHz_Profile'+str(idx)+'.txt'
     z0_TOPICA = 46.7
-    length = 0.1118 # m 
-    f = 48e6 # Hz
+    length = -(0.1118-50.7e-3) # m 
+    f = 55e6 # Hz
     
+    #fn_TOPICA = './data/TOPICA/ToreSupra_WEST/H-mode/TSproto12_55MHz/Zs_TSproto12_55MHz_LAD9-5cm.txt'
+    #z0_TOPICA = 46.7
+    #length = -(0.1118-50.7e-3) # m 
+    #f = 55e6 # Hz
     
     # Deembedding TOPICA network by a prescribed length.
     # This length depends of the CAD model sent to Daniele 
@@ -52,14 +58,28 @@ for idx in range(1,9):
     
     plasma_nwk_deemb = plasma_nwk.copy()
     plasma_nwk_deemb.s = exp_gamma.dot(plasma_nwk.s.squeeze()).dot(exp_gamma)
+    
+    #    # Additional renormalisation and deembedding for the Proto2007
+    #    plasma_nwk_deemb.s = rf.renormalize_s(plasma_nwk_deemb.s, 23.8, 58.35)
+    ##    plasma_nwk_deemb.z0 = 58.35
+    #    exp_gamma = np.eye(plasma.s.shape[0])*np.exp(+1j*beta*10e-3)
+    #    plasma_nwk_deemb.s = exp_gamma.dot(plasma_nwk.s.squeeze()).dot(exp_gamma)
+       
     plasma_z = np.squeeze(plasma_nwk_deemb.z) 
+    
+    # export the scattering parameters in a s4p file
+    plasma_nwk_deemb.write_touchstone(filename='S_TSproto12_55MHz_Hmode_LAD9-5cm',
+                                      write_z0=True)
     
     # Prescribed current vector for TOPICA port
     # 2  1
     # 4  3
     # in dipole configuration.                      
     I = np.r_[+1,-1,-1,+1]
-#    I = np.r_[0,0,1,-1,-1,1] # classical antenna
+#    # in monopole configuration
+#    I = np.r_[-1,-1,+1,+1]
+    
+    #    I = np.r_[0,0,1,-1,-1,1] # classical antenna
     
     # Resulting voltages
     V = plasma_z.dot(I)
@@ -71,7 +91,7 @@ for idx in range(1,9):
     
     # Coupling resistance
     Rc = Pt/(2*Is**2)
-    
+    print(Rc)
     Rc_vec.append(Rc)
 
    
