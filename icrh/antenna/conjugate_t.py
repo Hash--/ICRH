@@ -253,6 +253,40 @@ class ConjugateT(object):
         y = [Z11_re - np.real(z_match), Z11_im - np.imag(z_match)]
     
         return(y)    
+    
+    def capacitor_currents_voltages(self, Zplasma, a1):
+        a, b = self._capacitor_waves(self, Zplasma, a1)
+        return a-b, a+b
         
-
-
+    def _capacitor_waves(self, Zplasma, a1):
+        # insure that the impedance is a 2x2 matrix        
+        if np.shape(Zplasma) == ():
+            Zplasma = np.eye(2)*Zplasma
+        elif np.shape(Zplasma) == (1,):
+            Zplasma = np.eye(2)*Zplasma
+        elif np.shape(Zplasma) == (2,2):
+            pass
+        
+        CT = self.get_network()
+        
+        Splasma = np.squeeze(rf.z2s(Zplasma.reshape((1, Zplasma.shape[0], Zplasma.shape[1])), self.z0[1:]))
+        
+        # for all frequencies
+        # calculate a2, a3 and b1,b2,b3 vectors
+        un = np.eye(2)
+        _a = []
+        _b = []
+        for S_CT in CT.s:
+            S11 = S_CT[0,0]
+            S12 = S_CT[0,1:]
+            S21 = S_CT[1:,0]
+            S22 = S_CT[1:,1:]
+            b23 = np.linalg.inv(un - S22.dot(Splasma)).dot(S21*a1)
+            a23 = Splasma.dot(b23)
+#            import pdb; pdb.set_trace()
+            b1 = S11*a1 + S12.dot(a23)
+            _a.append([a1, a23[0], a23[1]])
+            _b.append([b1, b23[0], b23[1]])
+        a = np.column_stack(_a)
+        b = np.column_stack(_b)
+        return a, b

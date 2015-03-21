@@ -46,10 +46,13 @@ CT = ConjugateT(bridge, impedance_transformer, window)
 #CT = ConjugateT(bridge, None, None)
 
 
-sol=CT.match(C0=[100e-12, 20e-12], f_match=f_match, z_load=Z_load, z_match=Z_match)
+sol=CT.match(C0 = [100e-12, 20e-12], 
+             f_match = f_match, 
+             z_load = Z_load, 
+             z_match = Z_match)
 print(sol.x*1e12)
 
-CT.C = [60e-12, 60e-12]
+#CT.C = [60e-12, 60e-12]
 CT.C = sol.x
 
 CT.load(Z_load).plot_s_db(show_legend=False)
