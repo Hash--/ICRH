@@ -56,3 +56,13 @@ print(sol.x*1e12)
 CT.C = sol.x
 
 CT.load(Z_load).plot_s_db(show_legend=False)
+
+I, V = CT._capacitor_waves(Z_load, sqrt(1.5e6))
+
+figure(2)
+clf()
+plot(CT.frequency.f/1e6, abs(I[1,:])/1e3)
+plot(CT.frequency.f/1e6, abs(I[2,:])/1e3)
+xlabel('f [MHz]')
+ylabel('Icapa [kA]')
+grid(True)
