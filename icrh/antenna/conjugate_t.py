@@ -274,6 +274,7 @@ class ConjugateT(object):
 
     def _plasma_power_waves(self, Z_plasma, a_in):
         '''
+        Returns the power wave a, b at the capacitors (plasma side).
         
         Arguments
         ---------
@@ -286,8 +287,6 @@ class ConjugateT(object):
          - b_plasma: power wave from plasma to CT
          
         '''
-              
-
         # get unloaded network with the current set of capacitors        
         CT = self.get_network()
         
@@ -313,5 +312,25 @@ class ConjugateT(object):
         return a_plasma, b_plasma            
             
             
-            
+ 
+    def get_capacitor_currents_voltages(self, Z_plasma, a_in):
+        '''
+        Return the currents and voltages at the capacitors (plasma side).
 
+        Arguments
+        ---------
+         - a_in: power wave input of CT
+         - Z_plasma: complex impedance of the plasma [2x1]
+
+        Return
+        --------
+         - I_capa : current in A
+         - V_capa : voltage in V
+         
+        '''
+        a, b = self._plasma_power_waves(Z_plasma, a_in)
+        z0 = self.get_network().z0[:,1:]
+        I_capa = (a-b).T/np.sqrt(np.real(z0))
+        V_capa = (np.conjugate(z0)*a.T + z0*b.T)/np.sqrt(np.real(z0))               
+
+        return I_capa, V_capa
