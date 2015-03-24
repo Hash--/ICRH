@@ -41,12 +41,13 @@ from antenna.topica import *
 from matplotlib.pylab import *
 
 f_match = 55e6 # matching frequency
-Z_match = 29.74 # matching impedance 
+z_match = [29.74 - 15*1j, 29.74 - 15*1j]
+
+power_input = [1.5e6, 1.5e6]
+phase_input = [0.0, pi]
 
 
-#ideal_bridge = rf.media.Freespace(rf.Frequency(40, 60, 201, 'MHz'))
-
-#dummy_window = rf.Media(rf.Frequency(40, 60, 201, 'MHz'), 0, 0, z0=1)
+########
 bridge = rf.io.hfss_touchstone_2_network(\
         './data/Sparameters/WEST/WEST_ICRH_bridge.s3p', f_unit='MHz')
 impedance_transformer = rf.io.hfss_touchstone_2_network(\
@@ -54,6 +55,7 @@ impedance_transformer = rf.io.hfss_touchstone_2_network(\
 window = rf.io.hfss_touchstone_2_network(\
         './data/Sparameters/WEST/WEST_ICRH_window.s2p', f_unit='MHz')
 
+idx_f = np.argmin(np.abs(plasma.frequency.f - f_match))
 
 ## Simple plasma load, two independant impedance 
 #Z_simple1 = 1+30*1j
@@ -81,7 +83,8 @@ def TOPICA_2_network(filename, z0):
 #                            z0=46.7)
 
 # TOPICA matrices corrected from deembedding
-plasma = rf.io.hfss_touchstone_2_network('./data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Profile8.s4p')
+plasma = rf.io.hfss_touchstone_2_network(\
+    './data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Profile1.s4p')
 # for compatibility with skrf, copy the Frequency object from Bridge
 # and duplicate the S-parameters and z0 idenditically for all the frequencies
 plasma.frequency = bridge.frequency
@@ -91,14 +94,20 @@ plasma.z0 = np.tile(plasma.z0, (len(plasma.frequency),1))
 # Characteristic Impedance depends of the prototype number.
 # TSproto10: 13.7 Ohm
 # TSproto12: 46.7 Ohm
-CT1 = ConjugateT(bridge, impedance_transformer, window, capacitor_model='equivalent')
-CT2 = ConjugateT(bridge, impedance_transformer, window, capacitor_model='equivalent')
+CT1 = ConjugateT(bridge, impedance_transformer, window)
+CT2 = ConjugateT(bridge, impedance_transformer, window)
 
 RDL = ResonantDoubleLoop(CT1, CT2, plasma)
-a_in = [1,-1]
-f_match = 55e6
-z_match = [29.74, 29.74]
-RDL.match(a_in, f_match, z_match)
+
+
+RDL.match(power_input, phase_input, f_match, z_match)
+#RDL.C = np.array([80.40857552,  66.48864877,  65.51095657,  77.02052169])*1e-12
+#RDL.C = np.array([84.4149321,   65.12152122,  83.79557702,  65.58163935])*1e-12
+
+# Get results
+act_vswr = RDL.get_vswr_active(power_input, phase_input)
+act_S = RDL.get_s_active(power_input, phase_input)
+I_plasma, V_plasma = RDL.get_currents_and_voltages(power_input, phase_input)
 
 figure(2)
 clf()
@@ -109,6 +118,19 @@ axis([40,60,-50,0])
 legend(('S11', 'S22'),loc='best')
 
 subplot(122)
-plot(RDL.get_f()/1e6, 20*np.log10(np.abs(RDL.get_s_active(a_in))))
+plot(RDL.get_f()/1e6, 20*np.log10(np.abs(act_S)))
 legend(('Sact1', 'Sact2'),loc='best')
 axis([40,60,-50,0])
+
+
+# Display results
+print(RDL.C*1e12)
+print(10*np.log10(np.abs(act_S[idx_f])))
+print(np.abs(I_plasma[idx_f]))
+print(np.abs(V_plasma[idx_f]))
+
+data_to_print = np.concatenate(( \
+    RDL.C*1e12, act_vswr[idx_f], \
+    10*np.log10(np.abs(act_S[idx_f])), 180/pi*np.angle(act_S[idx_f]), \
+    np.abs(V_plasma[idx_f])/1e3,  np.abs(I_plasma[idx_f])/1e3))
+np.savetxt('.temp.txt', data_to_print, newline='\t')    
