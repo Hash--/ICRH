@@ -167,7 +167,8 @@ class ConjugateT(object):
         if np.isscalar(Z_plasma):
             Z_plasma = np.tile(Z_plasma, 2)
         
-        if np.shape(Z_plasma) == (2,):     
+        if np.shape(Z_plasma) == (2,):  
+            # convert Z into S with the bridge characteristic impedance
             S_plasma_H = rf.z2s(Z_plasma[0]*np.ones((len(freq),1,1)), z0=z0_RDL_H)
             S_plasma_B = rf.z2s(Z_plasma[1]*np.ones((len(freq),1,1)), z0=z0_RDL_B)
                 
@@ -274,6 +275,7 @@ class ConjugateT(object):
 
     def _plasma_power_waves(self, Z_plasma, a_in):
         '''
+        Returns the power wave a, b at the capacitors (plasma side).
         
         Arguments
         ---------
@@ -286,8 +288,6 @@ class ConjugateT(object):
          - b_plasma: power wave from plasma to CT
          
         '''
-              
-
         # get unloaded network with the current set of capacitors        
         CT = self.get_network()
         
@@ -313,5 +313,30 @@ class ConjugateT(object):
         return a_plasma, b_plasma            
             
             
-            
+ 
+    def get_capacitor_currents_voltages(self, Z_plasma, Pin):
+        '''
+        Return the currents and voltages at the capacitors (plasma side).
 
+        Arguments
+        ---------
+         - Pin: input power in the CT [W]
+         - Z_plasma: complex impedance of the plasma [2x1]
+
+        Return
+        --------
+         - I_capa : current in A
+         - V_capa : voltage in V
+         
+        '''
+        # Wath out the factor 2 in the power wave definition 
+        # This is expected from the power wave definition
+        #  as the power is defined by P = 1/2 V.I --> P = 1/2 a^2 
+        a_in = np.sqrt(2*Pin)
+
+        a, b = self._plasma_power_waves(Z_plasma, a_in)
+        z0 = self.get_network().z0[:,1:]
+        I_capa = (a-b).T/np.sqrt(np.real(z0))
+        V_capa = (np.conjugate(z0)*a.T + z0*b.T)/np.sqrt(np.real(z0))               
+
+        return I_capa, V_capa
