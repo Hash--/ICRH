@@ -105,6 +105,11 @@ class ConjugateT(object):
         
         The returned Network is thus a 3-ports Network, where port#0 is 
         the input port and port#1 and #2 are the load ports.
+        
+        Returns
+        --------
+         - skrf.Network
+         
         """
         capa_H = self._capacitor_network(self.C[0], z0=self.z0[1])
         capa_B = self._capacitor_network(self.C[1], z0=self.z0[2])
@@ -212,7 +217,7 @@ class ConjugateT(object):
         return(capacitor)    
         
         
-    def match(self, C0=[60e-12, 120e-12], f_match=50e6, z_load=1.0+30*1j, z_match=30+0*1j):
+    def match(self, f_match=50e6, z_load=1.0+30*1j, z_match=30+0*1j):
         """
         Match the resonant loop for a prescribed load impedance at a specified frequency
         
@@ -229,10 +234,22 @@ class ConjugateT(object):
         ----------
         sol: :class: 'scipy.optimize.solution'
         """
-        sol = scipy.optimize.root(self._optim_fun_single_RL, C0, args=(f_match, z_load, z_match) ) # 60pF as a starting point
+        success = False
+        while success == False:
+            # generate a random capacitor sets, centered on 70pF +/-40pF
+            C0 = 70e-12 + (-1 + 2*scipy.random.rand(2))*40e-12
+            sol = scipy.optimize.root(self._optim_fun_single_RL, C0, args=(f_match, z_load, z_match) ) # 60pF as a starting point
+            success = sol.success
+            print(success, sol.x/1e-12)
+                
+            for idm,Cm in enumerate(sol.x):
+                if (Cm < 12e-12) or (Cm > 200e-12):
+                    success = False
+                    print('Bad solution found (out of range capacitor) ! Re-doing...')
+
         self.C = sol.x            
         return(sol)
-    
+
     def _optim_fun_single_RL(self, C, f_match, z_load, z_match):
         """
         Return the match conditions at the
@@ -253,40 +270,48 @@ class ConjugateT(object):
         y = [Z11_re - np.real(z_match), Z11_im - np.imag(z_match)]
     
         return(y)    
-    
-    def capacitor_currents_voltages(self, Zplasma, a1):
-        a, b = self._capacitor_waves(self, Zplasma, a1)
-        return a-b, a+b
         
-    def _capacitor_waves(self, Zplasma, a1):
-        # insure that the impedance is a 2x2 matrix        
-        if np.shape(Zplasma) == ():
-            Zplasma = np.eye(2)*Zplasma
-        elif np.shape(Zplasma) == (1,):
-            Zplasma = np.eye(2)*Zplasma
-        elif np.shape(Zplasma) == (2,2):
-            pass
+
+    def _plasma_power_waves(self, Z_plasma, a_in):
+        '''
         
+        Arguments
+        ---------
+         - a_in: power wave input of CT
+         - Z_plasma: complex impedance of the plasma [2x1]
+        
+        Return
+        --------
+         - a_plasma: power wave from CT to plasma
+         - b_plasma: power wave from plasma to CT
+         
+        '''
+              
+
+        # get unloaded network with the current set of capacitors        
         CT = self.get_network()
         
-        Splasma = np.squeeze(rf.z2s(Zplasma.reshape((1, Zplasma.shape[0], Zplasma.shape[1])), self.z0[1:]))
+        S_plasma_H = rf.z2s(Z_plasma[0]*np.ones((len(CT.f),1,1)), z0=self.z0[1])
+        S_plasma_B = rf.z2s(Z_plasma[1]*np.ones((len(CT.f),1,1)), z0=self.z0[2])
+                 
+        a_plasma = []
+        b_plasma = []                 
+        for idf,f in enumerate(self.frequency.f):
+            S_CT = CT.s[idf]
+
+            S_plasma = np.eye(2)*[np.squeeze(S_plasma_H[idf]), np.squeeze(S_plasma_B[idf])]
+
+            _a = np.linalg.inv(np.eye(2) - S_CT[1:,1:].dot(S_plasma)).dot(S_CT[1:,0])*a_in
+            _b = S_plasma.dot(_a)
         
-        # for all frequencies
-        # calculate a2, a3 and b1,b2,b3 vectors
-        un = np.eye(2)
-        _a = []
-        _b = []
-        for S_CT in CT.s:
-            S11 = S_CT[0,0]
-            S12 = S_CT[0,1:]
-            S21 = S_CT[1:,0]
-            S22 = S_CT[1:,1:]
-            b23 = np.linalg.inv(un - S22.dot(Splasma)).dot(S21*a1)
-            a23 = Splasma.dot(b23)
-#            import pdb; pdb.set_trace()
-            b1 = S11*a1 + S12.dot(a23)
-            _a.append([a1, a23[0], a23[1]])
-            _b.append([b1, b23[0], b23[1]])
-        a = np.column_stack(_a)
-        b = np.column_stack(_b)
-        return a, b
+            a_plasma.append(_a)
+            b_plasma.append(_b)
+
+        a_plasma = np.column_stack(a_plasma)
+        b_plasma = np.column_stack(b_plasma)
+        
+        return a_plasma, b_plasma            
+            
+            
+            
+

@@ -41,8 +41,8 @@ from antenna.topica import *
 from matplotlib.pylab import *
 
 f_match = 55e6 # matching frequency
-Z_match = 30+1j*0 # matching impedance 
-Z_load = 1 + 30*1j
+Z_match = 29.74 # matching impedance 
+
 
 #ideal_bridge = rf.media.Freespace(rf.Frequency(40, 60, 201, 'MHz'))
 
@@ -55,17 +55,17 @@ window = rf.io.hfss_touchstone_2_network(\
         './data/Sparameters/WEST/WEST_ICRH_window.s2p', f_unit='MHz')
 
 
-
-Z_simple1 = 1+30*1j
-Z_simple2 = 1+30*1j
-# The Z matrix ports indexing follows TOPICA convention, that is indexes strap 1 and 3, and 2 and 4
-# create a diagonal Z-matrix
-Z_matrix_simple = np.diag([Z_simple1, Z_simple2, Z_simple1, Z_simple2])
-# creating the associated network
-plasma = rf.Network(s=rf.z2s(np.tile(Z_matrix_simple,(len(bridge.frequency),1,1)), z0=[13,13,13,13]))
-plasma.frequency = bridge.frequency
-plasma.z0 = [13.7,13.7,13.7,13.7]
-plasma
+## Simple plasma load, two independant impedance 
+#Z_simple1 = 1+30*1j
+#Z_simple2 = 1+30*1j
+## The Z matrix ports indexing follows TOPICA convention, that is indexes strap 1 and 3, and 2 and 4
+## create a diagonal Z-matrix
+#Z_matrix_simple = np.diag([Z_simple1, Z_simple2, Z_simple1, Z_simple2])
+## creating the associated network
+#plasma = rf.Network(s=rf.z2s(np.tile(Z_matrix_simple,(len(bridge.frequency),1,1)), z0=[13,13,13,13]))
+#plasma.frequency = bridge.frequency
+#plasma.z0 = [13.7,13.7,13.7,13.7]
+#plasma
 
 
 def TOPICA_2_network(filename, z0):
@@ -76,22 +76,28 @@ def TOPICA_2_network(filename, z0):
     plasma_TOPICA = proto9.to_skrf_network(bridge.frequency, name='plasma')
     return(plasma_TOPICA)
 
-#plasma = TopicaResult('./data/TOPICA/Tore Supra_WEST/L-mode/TSproto12/Zs_TSproto12_50MHz_Profile8.txt', \
-#                        z0=46.7)
+# # RAW data from TOPICA
+#plasma = TOPICA_2_network('./data/TOPICA/ToreSupra_WEST/L-mode/TSproto12/Zs_TSproto12_50MHz_Profile1.txt', \
+#                            z0=46.7)
 
-plasma = TOPICA_2_network('./data/TOPICA/ToreSupra_WEST/L-mode/TSproto12/Zs_TSproto12_50MHz_Profile1.txt', \
-                            z0=46.7)
+# TOPICA matrices corrected from deembedding
+plasma = rf.io.hfss_touchstone_2_network('./data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Profile8.s4p')
+# for compatibility with skrf, copy the Frequency object from Bridge
+# and duplicate the S-parameters and z0 idenditically for all the frequencies
+plasma.frequency = bridge.frequency
+plasma.s = np.tile(plasma.s, (len(plasma.frequency), 1, 1))
+plasma.z0 = np.tile(plasma.z0, (len(plasma.frequency),1))
 
 # Characteristic Impedance depends of the prototype number.
 # TSproto10: 13.7 Ohm
 # TSproto12: 46.7 Ohm
-CT1 = ConjugateT(bridge, impedance_transformer, window)
-CT2 = ConjugateT(bridge, impedance_transformer, window)
+CT1 = ConjugateT(bridge, impedance_transformer, window, capacitor_model='equivalent')
+CT2 = ConjugateT(bridge, impedance_transformer, window, capacitor_model='equivalent')
 
 RDL = ResonantDoubleLoop(CT1, CT2, plasma)
 a_in = [1,-1]
-f_match = 50e6
-z_match = [30, 30]
+f_match = 55e6
+z_match = [29.74, 29.74]
 RDL.match(a_in, f_match, z_match)
 
 figure(2)

@@ -91,7 +91,11 @@ class ResonantDoubleLoop(object):
         """
         success = False
         while success == False:
+            # a random number between 12 and 120 pF
             C0 = 12e-12 + sp.random.rand(4)*(120e-12 - 12e-12)
+            # a random number centered on 70 pF +/- 50pF
+            C0 = 70e-12 + (-1+2*sp.random.rand(4))*50e-12
+            
             sol = sp.optimize.root(self._match_function, C0, args=(a_in, f_match, Z_match))
             success = sol.success
             
