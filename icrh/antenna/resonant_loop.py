@@ -87,12 +87,14 @@ class ResonantDoubleLoop(object):
         
         Parameters
         ----------
-        a_in=[a1, a2] : 2 elements array
-            Input power waves
+        power_in : 2 element array 
+            Input wave powers [Watts]
+        phase_in : 2 element array
+            Input wave phases [rad]
         f_match: scalar
-            Matching frequency in Hz
+            Matching frequency in [Hz]
         Z_match: 2-elements array    
-            Matching impedance of each transmission line
+            Matching impedance of each transmission line in [Ohm]
         
         Returns
         ----------

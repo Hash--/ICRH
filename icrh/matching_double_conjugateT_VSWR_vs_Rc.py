@@ -45,12 +45,6 @@ def TOPICA_2_network(filename, z0):
 # TOPICA matrices corrected from deembedding
 plasma = rf.io.hfss_touchstone_2_network(\
     './data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Profile8.s4p')
-    
-#plasma = rf.io.hfss_touchstone_2_network(\
-#    './data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Hmode_LAD6-5cm.s4p')
-    
-# for compatibility with skrf, copy the Frequency object from Bridge
-# and duplicate the S-parameters and z0 idenditically for all the frequencies
 plasma.frequency = bridge.frequency
 plasma.s = np.tile(plasma.s, (len(plasma.frequency), 1, 1))
 plasma.z0 = np.tile(plasma.z0, (len(plasma.frequency),1))
@@ -71,6 +65,8 @@ print(RDL.get_vswr_active(power_input, phase_input)[idx_f])
 
 # Now the antenna has been matched on a specific antenna loading,
 # we change this load and look to the VSWR.
+Rc = np.array([1.06,1.34,1.57,1.81,2.05,2.45,2.65,2.91])
+
 VSWR = []
 for idx_plasma in range(1,9):
     plasma = rf.io.hfss_touchstone_2_network(\
@@ -79,7 +75,46 @@ for idx_plasma in range(1,9):
     plasma.s = np.tile(plasma.s, (len(plasma.frequency), 1, 1))
     plasma.z0 = np.tile(plasma.z0, (len(plasma.frequency),1))
 
-    _RDL = ResonantDoubleLoop(CT1, CT2, plasma)
+    _RDL = ResonantDoubleLoop(CT1, CT2, plasma, C=RDL.C)
+
     VSWR.append(_RDL.get_vswr_active(power_input, phase_input)[idx_f])    
 
-  
+VSWR = np.array(VSWR)
+
+figure(1)
+clf()
+fill_between(Rc, VSWR[:,0], VSWR[:,1], lw=2, alpha=0.2) 
+xlabel('Rc [$\Omega$]', fontsize=14)
+ylabel('VSWR', fontsize=14)
+grid(True)
+xticks(fontsize=14)
+yticks(fontsize=14)
+
+# Match on a different point
+plasma = rf.io.hfss_touchstone_2_network(\
+    './data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Profile1.s4p')
+plasma.frequency = bridge.frequency
+plasma.s = np.tile(plasma.s, (len(plasma.frequency), 1, 1))
+plasma.z0 = np.tile(plasma.z0, (len(plasma.frequency),1))
+
+RDL = ResonantDoubleLoop(CT1, CT2, plasma)
+RDL.match(power_input, phase_input, f_match, z_match)
+
+VSWR = []
+for idx_plasma in range(1,9):
+    plasma = rf.io.hfss_touchstone_2_network(\
+    './data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Profile'+str(idx_plasma)+'.s4p')
+    plasma.frequency = bridge.frequency
+    plasma.s = np.tile(plasma.s, (len(plasma.frequency), 1, 1))
+    plasma.z0 = np.tile(plasma.z0, (len(plasma.frequency),1))
+
+    _RDL = ResonantDoubleLoop(CT1, CT2, plasma, C=RDL.C)
+
+    VSWR.append(_RDL.get_vswr_active(power_input, phase_input)[idx_f])    
+
+VSWR = np.array(VSWR)
+fill_between(Rc, VSWR[:,0], VSWR[:,1], lw=2, alpha=0.2, color='g') 
+
+axhline(y=2, color='k', lw=2)
+
+savefig('WEST_ICRH_VSWR_vs_Rc_ideal_matching.png', dpi=300)
