@@ -41,7 +41,7 @@ from antenna.topica import *
 from matplotlib.pylab import *
 
 f_match = 55e6 # matching frequency
-z_match = [29.74 - 15*1j, 29.74 - 15*1j]
+z_match = [29.74 - 0*1j, 29.74 - 0*1j]
 
 power_input = [1.5e6, 1.5e6]
 phase_input = [0.0, pi]
@@ -83,26 +83,24 @@ def TOPICA_2_network(filename, z0):
 #                            z0=46.7)
 
 # TOPICA matrices corrected from deembedding
+#plasma = rf.io.hfss_touchstone_2_network(\
+#    './data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Profile8.s4p')
+    
 plasma = rf.io.hfss_touchstone_2_network(\
-    './data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Profile1.s4p')
+    './data/Sparameters/WEST/plasma_from_TOPICA/S_TSproto12_55MHz_Hmode_LAD6-5cm.s4p')
+    
 # for compatibility with skrf, copy the Frequency object from Bridge
 # and duplicate the S-parameters and z0 idenditically for all the frequencies
 plasma.frequency = bridge.frequency
 plasma.s = np.tile(plasma.s, (len(plasma.frequency), 1, 1))
 plasma.z0 = np.tile(plasma.z0, (len(plasma.frequency),1))
 
-# Characteristic Impedance depends of the prototype number.
-# TSproto10: 13.7 Ohm
-# TSproto12: 46.7 Ohm
 CT1 = ConjugateT(bridge, impedance_transformer, window)
 CT2 = ConjugateT(bridge, impedance_transformer, window)
 
 RDL = ResonantDoubleLoop(CT1, CT2, plasma)
 
-
 RDL.match(power_input, phase_input, f_match, z_match)
-#RDL.C = np.array([80.40857552,  66.48864877,  65.51095657,  77.02052169])*1e-12
-#RDL.C = np.array([84.4149321,   65.12152122,  83.79557702,  65.58163935])*1e-12
 
 # Get results
 act_vswr = RDL.get_vswr_active(power_input, phase_input)
@@ -125,9 +123,9 @@ axis([40,60,-50,0])
 
 # Display results
 print(RDL.C*1e12)
-print(10*np.log10(np.abs(act_S[idx_f])))
-print(np.abs(I_plasma[idx_f]))
-print(np.abs(V_plasma[idx_f]))
+#print(10*np.log10(np.abs(act_S[idx_f])))
+#print(np.abs(I_plasma[idx_f]))
+#print(np.abs(V_plasma[idx_f]))
 
 data_to_print = np.concatenate(( \
     RDL.C*1e12, act_vswr[idx_f], \
