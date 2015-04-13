@@ -55,7 +55,7 @@ impedance_transformer = rf.io.hfss_touchstone_2_network(\
 window = rf.io.hfss_touchstone_2_network(\
         './data/Sparameters/WEST/WEST_ICRH_window.s2p', f_unit='MHz')
 
-idx_f = np.argmin(np.abs(plasma.frequency.f - f_match))
+idx_f = np.argmin(np.abs(bridge.frequency.f - f_match))
 
 ## Simple plasma load, two independant impedance 
 #Z_simple1 = 1+30*1j
