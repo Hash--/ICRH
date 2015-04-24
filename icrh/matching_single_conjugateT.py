@@ -20,6 +20,8 @@ Matching a single conjugate-T.
 
 @author: J.Hillairet
 """
+from matplotlib.pylab import *
+
 import skrf as rf
 
 from antenna.conjugate_t import ConjugateT
