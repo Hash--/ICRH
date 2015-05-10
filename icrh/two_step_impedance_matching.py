@@ -40,13 +40,13 @@ Source_P = 1.5e6 # W
 
 Load_Z = 3 #
 
-Stage1_Dint = 140e-3
-Stage1_Dout = 153.36e-3
+Stage1_Dint = 140e-3# ASIPP final diameter 
+Stage1_Dout = 153e-3# ASIPP final diameter 
 Stage1_L = 1.5 # lambda/4 @ 50MHz
 Stage1_eps_r = 1
 
-Stage2_Dint = 114.8e-3
-Stage2_Dout = 153.36e-3
+Stage2_Dint = 114e-3# ASIPP final diameter 
+Stage2_Dout = 153e-3# ASIPP final diameter 
 Stage2_L = 1.5
 Stage2_eps_r = 1
 
@@ -83,13 +83,14 @@ grid()
 f = 60e6
 # copper conductivity
 sigma = 4.4e7#5.8e7 # S/m
-
+# standing wave ratio
+SWR = 1
 
 beta = 2*pi*f/c
 
 # Voltage and current as 30 Ohm feeder
-V0 = sqrt(2*Source_P*Source_Z)
-I0 = sqrt(2*Source_P/Source_Z)
+V0 = sqrt(2*Source_P*Source_Z*SWR)
+I0 = sqrt(2*Source_P/Source_Z*SWR)
 
 # from source to Stage2
 l2 = linspace(0,Stage2_L,num=101)
@@ -127,14 +128,14 @@ grid(True)
 
 # Calculates the loss on the conductors
 
-# surface resistance
+# surface resistance in [Ohm/square]
 Rs = sqrt(2.*pi*f*mu_0/(2.*sigma))
+# Power loss density in W/m^2
+P_l1_inner = Rs * abs(I1)**2 / 2 / (pi*Stage1_Dint)**2
+P_l1_outer = Rs * abs(I1)**2 / 2 / (pi*Stage1_Dout)**2
 
-P_l1_inner = Rs * abs(I1)**2 / (4.*pi) * (2./Stage1_Dint)
-P_l1_outer = Rs * abs(I1)**2 / (4.*pi) * (2./Stage1_Dout)
-
-P_l2_inner = Rs * abs(I2)**2 / (4.*pi) * (2./Stage2_Dint)
-P_l2_outer = Rs * abs(I2)**2 / (4.*pi) * (2./Stage2_Dout)
+P_l2_inner = Rs * abs(I2)**2 / 2 / (pi*Stage2_Dint)**2
+P_l2_outer = Rs * abs(I2)**2 / 2 / (pi*Stage2_Dout)**2
 
 #fig3 = figure(3)
 #fig3.clear()
