@@ -1,0 +1,27 @@
+Model Proto 2007
+-----------------
+Zc = 23.8 Ohm
+Sans deembedding : Z11@48MHz = 0.634 + i38.45
+Avec deembedding : Z11@48MHz = 0.447 + i29.61 (122mm)
+
+
+Model V1
+--------
+Zc = 23.8 Ohm
+Sans deembedding : Z11@48MHz = 0.167 + i27.86
+Avec deembedding : Z11@48MHz = 0.130 + i21.85 (120mm)
+
+Model V4
+--------
+Zc = 9.2 Ohm
+Sans deembedding : Z11@48MHz = 0.195 + i29.62
+Avec deembedding : Z11@48MHz = 0.115 + i21.96 (95mm)
+
+Model Final
+------------
+Zc = 46.6 Ohm
+Sans deembedding : Z11@48MHz = 0.1834 + i40.43
+Avec deembedding : Z11@48MHz = 0.1306 + i23.32 (250.7mm)
+
+
+ 
