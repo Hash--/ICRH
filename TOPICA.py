@@ -51,9 +51,10 @@ class TopicaResult:
                 
         """        
         data = np.loadtxt(self.filename, skiprows=3)
-        z = np.zeros((np.sqrt(np.size(data, 0)), np.sqrt(np.size(data, 0))), dtype='complex')
+        dim = np.int(np.sqrt(np.size(data, 0)))
+        z = np.zeros((dim, dim), dtype='complex')
         for id1 in range(np.size(data, 0)):
-            z[data[id1, 0]-1, data[id1, 1]-1] = complex(data[id1, 2], data[id1, 3])
+            z[int(data[id1, 0])-1, int(data[id1, 1])-1] = complex(data[id1, 2], data[id1, 3])
         return(z)
     
     def get_s(self):
