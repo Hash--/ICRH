@@ -70,10 +70,10 @@ class ResonantDoubleLoop(object):
         self.CT2.z0[1:] = np.array([self.plasma.z0[0,1], self.plasma.z0[0,3]])
         
         # Should we renormalize as well the bridge output port z0 to the plasma port z0 ?
-        #self.CT1.network = self.CT1.get_network().renormalize(
-        #    np.tile([self.CT1.z0[0], self.plasma.z0[0,0], self.plasma.z0[0,2]], (len(self.CT1.network),1) ))
-        #self.CT2.network = self.CT2.get_network().renormalize(
-        #    np.tile([self.CT2.z0[0], self.plasma.z0[0,1], self.plasma.z0[0,3]], (len(self.CT2.network),1) ))
+        self.CT1.network = self.CT1.get_network().renormalize(
+            np.tile([self.CT1.z0[0], self.plasma.z0[0,0], self.plasma.z0[0,2]], (len(self.CT1.get_network()),1) ))
+        self.CT2.network = self.CT2.get_network().renormalize(
+            np.tile([self.CT2.z0[0], self.plasma.z0[0,1], self.plasma.z0[0,3]], (len(self.CT2.get_network()),1) ))
                
         # connect the network together       
         temp1 = rf.connect(self.plasma, 0, self.CT1.get_network(), 1)
