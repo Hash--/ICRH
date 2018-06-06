@@ -282,7 +282,7 @@ class ResonantDoubleLoop(object):
         """
         return(self.get_network().frequency.f)     
 
-    def get_currents_and_voltages(self, power_in, phase_in):
+    def get_currents_and_voltages(self, power_in, phase_in, frequencies=None):
         """
         Returns the currents and voltages at the capacitors (plasma side)
         for a prescribed power excitation.
@@ -291,6 +291,8 @@ class ResonantDoubleLoop(object):
         ---------
          - power_in [2x1] : input RF power in each ConjugateT [W]
          - phase_in [2x1] : input phase in each ConjugateT [rad]
+         - frequencies (None) : selected frequencies as a list. 
+                             If None, return results for all network frequencies
         
         Returns
         ---------
@@ -305,25 +307,32 @@ class ResonantDoubleLoop(object):
         # For each frequencies of the network
         _a = []
         _b = []
+
+        if frequencies is None:
+            frequencies = self.CT1.frequency.f
+       
         for idx, f in enumerate(self.CT1.frequency.f):
-            S_CT1 = self.CT1.get_network().s[idx]
-            S_CT2 = self.CT2.get_network().s[idx]
-            S_plasma = self.plasma.s[idx]
             
-            # convenience matrices
-            A = np.array([[S_CT1[1,0], 0 ], 
-                          [0         , S_CT2[1,0] ],
-                          [S_CT1[2,0], 0 ],
-                          [0         , S_CT2[2,0]]])
-            C = np.array([[S_CT1[1,1], 0, S_CT1[1,2], 0], 
-                          [0, S_CT2[1,1], 0, S_CT2[1,2]],
-                          [S_CT1[2,1], 0, S_CT1[2,2], 0], 
-                          [0, S_CT2[2,1], 0, S_CT2[2,2]]])
-            _a_plasma = np.linalg.inv(np.eye(4) - C.dot(S_plasma)).dot(A).dot(a_in)
-            _b_plasma = S_plasma.dot(_a_plasma)
+            if f in frequencies:
             
-            _a.append(_a_plasma)
-            _b.append(_b_plasma)
+                S_CT1 = self.CT1.get_network().s[idx]
+                S_CT2 = self.CT2.get_network().s[idx]
+                S_plasma = self.plasma.s[idx]
+
+                # convenience matrices
+                A = np.array([[S_CT1[1,0], 0 ], 
+                              [0         , S_CT2[1,0] ],
+                              [S_CT1[2,0], 0 ],
+                              [0         , S_CT2[2,0]]])
+                C = np.array([[S_CT1[1,1], 0, S_CT1[1,2], 0], 
+                              [0, S_CT2[1,1], 0, S_CT2[1,2]],
+                              [S_CT1[2,1], 0, S_CT1[2,2], 0], 
+                              [0, S_CT2[2,1], 0, S_CT2[2,2]]])
+                _a_plasma = np.linalg.inv(np.eye(4) - C.dot(S_plasma)).dot(A).dot(a_in)
+                _b_plasma = S_plasma.dot(_a_plasma)
+
+                _a.append(_a_plasma)
+                _b.append(_b_plasma)
             
         a_plasma = np.column_stack(_a)
         b_plasma = np.column_stack(_b)
