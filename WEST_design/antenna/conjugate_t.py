@@ -195,24 +195,34 @@ class ConjugateT(object):
         """
         Return a 2 ports skrf.Network of a capacitor.
         
+        Parameters
+        ----------
+        C : float
+            capacitance [F]
+        
+        z0 : float 
+            line characteric impedance [Ohm]
+            
+        Returns
+        -------
+        capacitor : :class: 'skrf.network'
+            Resulting network (2 ports)
+        
         """
-        # 2 ports
-        S_capacitor = np.zeros((len(self.frequency),2,2), dtype='complex')
-                
-        for idf,f in enumerate(self.frequency.f):
-            if self.capacitor_model is 'ideal':
-                Z_capacitor = 1./(1j*C*2*np.pi*f)
-            elif self.capacitor_model is 'equivalent':
-                Z_C_serie = 1./(1j*C*2*np.pi*f)
-                Z_R_serie = 0.01 # Ohm
-                Z_L_serie = 1j*(24e-9)*2*np.pi*f # 24 nH serie inductance
-                Z_R_parallel = 20e6 # Ohm
-                
-                Z_serie = Z_C_serie + Z_R_serie + Z_L_serie  
-                Z_capacitor = (Z_serie * Z_R_parallel)/(Z_serie + Z_R_parallel)
-                
-            # serie-thru impedance S-matrix
-            S_capacitor[idf,] = 1/(Z_capacitor+2*z0)*np.array([[Z_capacitor,2*z0],[2*z0, Z_capacitor]])
+        if self.capacitor_model is 'ideal':
+            Z_capacitor = 1./(1j*C*2*np.pi*self.frequency.f)
+        elif self.capacitor_model is 'equivalent':
+            Z_C_serie = 1./(1j*C*2*np.pi*self.frequency.f)
+            Z_R_serie = 0.01 # Ohm
+            Z_L_serie = 1j*(24e-9)*2*np.pi*self.frequency.f # 24 nH serie inductance
+            Z_R_parallel = 20e6 # Ohm
+            Z_serie = Z_C_serie + Z_R_serie + Z_L_serie  
+            Z_capacitor = (Z_serie * Z_R_parallel)/(Z_serie + Z_R_parallel)
+        
+        # 2-port series capacity
+        S_capacitor = np.array([[Z_capacitor, np.tile(2*z0, Z_capacitor.shape)],
+                                [np.tile(2*z0, Z_capacitor.shape), Z_capacitor]]).T \
+                      / ((Z_capacitor + 2*z0)*np.ones((2,2,len(Z_capacitor)))).T 
         
         capacitor = rf.Network(frequency=self.frequency, s=S_capacitor, z0=z0)
         return(capacitor)    
