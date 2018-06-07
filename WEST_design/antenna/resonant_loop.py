@@ -109,17 +109,21 @@ class ResonantDoubleLoop(object):
             Solution found
             
         """
+        bounds = sp.optimize.Bounds([20e-12, 20e-12, 20e-12, 20e-12], 
+                                    [120e-12, 120e-12, 120e-12, 120e-12])
+        
         success = False
         while success == False:
             # a random number centered on 70 pF +/- 50pF
-            C0 = 70e-12 + (-1+2*sp.random.rand(4))*50e-12
+            C0 = 1e-12*(70 + (-1+2*sp.random.rand(4)))
             
-            sol = sp.optimize.root(self._match_function, C0, args=(power_in, phase_in, f_match, Z_match))
+            sol = sp.optimize.root(fun=self._match_function, x0=C0, 
+                                       args=(power_in, phase_in, f_match, Z_match))
             success = sol.success
             
             print(success, sol.x/1e-12)
                 
-            for idm,Cm in enumerate(sol.x):
+            for Cm in sol.x:
                 if (Cm < 12e-12) or (Cm > 200e-12):
                     success = False
                     print('Bad solution found (out of range capacitor) ! Re-doing...')
@@ -154,7 +158,7 @@ class ResonantDoubleLoop(object):
         self.C = C
         
         # create the antenna network with the given capacitor values
-        network = self.get_network()
+        network = self.get_network() 
         
         # optimization target
         index_f_match = np.argmin(np.abs(network.frequency.f - f_match))
@@ -286,7 +290,7 @@ class ResonantDoubleLoop(object):
         """
         return(self.get_network().frequency.f)     
 
-    def get_currents_and_voltages(self, power_in, phase_in, frequencies=None):
+    def get_currents_and_voltages(self, power_in, phase_in, freq=None):
         """
         Returns the currents and voltages at the capacitors (plasma side)
         for a prescribed power excitation.
@@ -295,8 +299,8 @@ class ResonantDoubleLoop(object):
         ---------
          - power_in [2x1] : input RF power in each ConjugateT [W]
          - phase_in [2x1] : input phase in each ConjugateT [rad]
-         - frequencies (None) : selected frequencies as a list. 
-                             If None, return results for all network frequencies
+         - freq (None) : selected frequencies as a list. 
+                        If None, return results for all network frequencies
         
         Returns
         ---------
@@ -311,32 +315,27 @@ class ResonantDoubleLoop(object):
         # For each frequencies of the network
         _a = []
         _b = []
+      
+        for idx, f in enumerate(self.CT1.frequency[freq].f):
 
-        if frequencies is None:
-            frequencies = self.CT1.frequency.f
-       
-        for idx, f in enumerate(self.CT1.frequency.f):
-            
-            if f in frequencies:
-            
-                S_CT1 = self.CT1.get_network().s[idx]
-                S_CT2 = self.CT2.get_network().s[idx]
-                S_plasma = self.plasma.s[idx]
+            S_CT1 = self.CT1.get_network()[freq].s[idx]
+            S_CT2 = self.CT2.get_network()[freq].s[idx]
+            S_plasma = self.plasma.s[idx]
 
-                # convenience matrices
-                A = np.array([[S_CT1[1,0], 0 ], 
-                              [0         , S_CT2[1,0] ],
-                              [S_CT1[2,0], 0 ],
-                              [0         , S_CT2[2,0]]])
-                C = np.array([[S_CT1[1,1], 0, S_CT1[1,2], 0], 
-                              [0, S_CT2[1,1], 0, S_CT2[1,2]],
-                              [S_CT1[2,1], 0, S_CT1[2,2], 0], 
-                              [0, S_CT2[2,1], 0, S_CT2[2,2]]])
-                _a_plasma = np.linalg.inv(np.eye(4) - C.dot(S_plasma)).dot(A).dot(a_in)
-                _b_plasma = S_plasma.dot(_a_plasma)
+            # convenience matrices
+            A = np.array([[S_CT1[1,0], 0 ], 
+                          [0         , S_CT2[1,0] ],
+                          [S_CT1[2,0], 0 ],
+                          [0         , S_CT2[2,0]]])
+            C = np.array([[S_CT1[1,1], 0, S_CT1[1,2], 0], 
+                          [0, S_CT2[1,1], 0, S_CT2[1,2]],
+                          [S_CT1[2,1], 0, S_CT1[2,2], 0], 
+                          [0, S_CT2[2,1], 0, S_CT2[2,2]]])
+            _a_plasma = np.linalg.inv(np.eye(4) - C.dot(S_plasma)).dot(A).dot(a_in)
+            _b_plasma = S_plasma.dot(_a_plasma)
 
-                _a.append(_a_plasma)
-                _b.append(_b_plasma)
+            _a.append(_a_plasma)
+            _b.append(_b_plasma)
             
         a_plasma = np.column_stack(_a)
         b_plasma = np.column_stack(_b)
