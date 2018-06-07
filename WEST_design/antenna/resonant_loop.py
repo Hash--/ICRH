@@ -52,13 +52,15 @@ class ResonantDoubleLoop(object):
         # update the network
         self.network = self.get_network()
         
-    def get_network(self):
+    def get_network(self, freq=None):
         '''
         Connect the both RDLs to the 4-ports plasma and return the resulting network
         
         Parameters
         ----------
-        None
+        freq : list or string 
+            frequency slicing indicator. Default is None (all frequencies). 
+            Slicing indicator as in http://scikit-rf.readthedocs.io/en/latest/tutorials/Networks.html#Slicing
             
         Returns
         ----------
@@ -74,11 +76,15 @@ class ResonantDoubleLoop(object):
         #    np.tile([self.CT1.z0[0], self.plasma.z0[0,0], self.plasma.z0[0,2]], (len(self.CT1.network),1) ))
         #self.CT2.network = self.CT2.get_network().renormalize(
         #    np.tile([self.CT2.z0[0], self.plasma.z0[0,1], self.plasma.z0[0,3]], (len(self.CT2.network),1) ))
-               
+        # frequency slicing (if any)
+        plasma = self.plasma[freq]
+        CT1 = self.CT1.get_network()[freq]
+        CT2 = self.CT2.get_network()[freq]
+            
         # connect the network together       
-        temp1 = rf.connect(self.plasma, 0, self.CT1.get_network(), 1)
+        temp1 = rf.connect(plasma, 0, CT1, 1)
         temp2 = rf.innerconnect(temp1, 1, 4) # watch out ! plasma ports 0 & 2 to RDL (TOPICA indexing)
-        network = rf.innerconnect(rf.connect(temp2, 0, self.CT2.get_network(), 1), 0, 3)
+        network = rf.innerconnect(rf.connect(temp2, 0, CT2, 1), 0, 3)
         network.name = 'antenna'
         return(network)
     
@@ -105,8 +111,6 @@ class ResonantDoubleLoop(object):
         """
         success = False
         while success == False:
-            # a random number between 12 and 120 pF
-            C0 = 12e-12 + sp.random.rand(4)*(120e-12 - 12e-12)
             # a random number centered on 70 pF +/- 50pF
             C0 = 70e-12 + (-1+2*sp.random.rand(4))*50e-12
             
@@ -161,8 +165,8 @@ class ResonantDoubleLoop(object):
              np.imag(Z_active[index_f_match,0]) - np.imag(Z_match[0]),
              np.real(Z_active[index_f_match,1]) - np.real(Z_match[1]), 
              np.imag(Z_active[index_f_match,1]) - np.imag(Z_match[1])]
-        
-        return(y)
+
+        return(np.asarray(y))
         
     def get_power_waves(self, power_in, phase_in):
         '''
@@ -274,7 +278,7 @@ class ResonantDoubleLoop(object):
         Returns the frequency values of the network
         
         Returns
-        ________
+        -------
         f : (f,) array
             Frequency values of the network
             alias to self.get_network().frequency.f
