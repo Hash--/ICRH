@@ -42,12 +42,12 @@ class TopicaResult:
 	
     def get_z(self):
         """ 
-        Get the characteristic impedance of the ports in Ohm.
+        Get the impedance matrix as an NxN array, N being the number of ports.
         
         Returns
         ----------        
-        z0 : :class:`numpy.ndarray` of length n
-                characteristic impedance for network
+        z : :class:`numpy.ndarray` 
+                impedance matrix
                 
         """        
         data = np.loadtxt(self.filename, skiprows=3)
@@ -78,6 +78,9 @@ class TopicaResult:
     def to_skrf_network(self, skrf_frequency, name='plasma'):
         """ 
         Convert into a skrf Network.
+        
+        Assume the scattering parameters of the network are the same 
+        for all the frequencies of the network. 
         
         Parameters
         ----------
@@ -113,3 +116,31 @@ class TopicaResult:
         """
         network = self.to_skrf_network(skrf_frequency, name=name)
         network.write_touchstone(filename=filename, write_z0=True)
+        
+    def get_Rc(self, I=[1, -1, -1, 1], freq=None):
+        """
+        Calculate the coupling resistance of the TOPICA Z-matrix for 
+        a given current excitation.
+        
+        Coupling resistance is defined as in :
+        W. Helou, L. Colas, J. Hillairet et al., Fusion Eng. Des. 96–97 (2015) 5–8. doi:10.1016/j.fusengdes.2015.01.005.
+        
+        Parameters
+        ----------
+        I : list
+            Current excitation at port. Default is [1, -1, -1, 1], ie. dipole phasing of 2x2 straps antenna
+        freq : list. Default is None
+            List of frequencies to calculate the Rc. Default is all frequencies    
+        
+        Returns
+        -------
+        Rc : float
+            Coupling Resistance
+        """
+        N = length(I) # number of ports
+        V = self.z @ I
+        Pt = np.real(V.conj() @ I) / 2
+        Is = np.sqrt(np.sum(np.abs(I)) / N)
+        Rc = Pt / (2*Is**2)
+        return Rc
+        
