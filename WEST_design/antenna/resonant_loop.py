@@ -52,6 +52,7 @@ class ResonantDoubleLoop(object):
         # update the network
         self.network = self.get_network()
         
+
     def get_network(self, freq=None):
         '''
         Connect the both RDLs to the 4-ports plasma and return the resulting network
@@ -72,18 +73,22 @@ class ResonantDoubleLoop(object):
         self.CT2.z0[1:] = np.array([self.plasma.z0[0,1], self.plasma.z0[0,3]])
         
         # Should we renormalize as well the bridge output port z0 to the plasma port z0 ?
-        #self.CT1.network = self.CT1.get_network().renormalize(
-        #    np.tile([self.CT1.z0[0], self.plasma.z0[0,0], self.plasma.z0[0,2]], (len(self.CT1.network),1) ))
-        #self.CT2.network = self.CT2.get_network().renormalize(
-        #    np.tile([self.CT2.z0[0], self.plasma.z0[0,1], self.plasma.z0[0,3]], (len(self.CT2.network),1) ))
+
+        self.CT1.network = self.CT1.get_network().renormalize(
+            np.tile([self.CT1.z0[0], self.plasma.z0[0,0], self.plasma.z0[0,2]], (len(self.CT1.get_network()),1) ))
+        self.CT2.network = self.CT2.get_network().renormalize(
+            np.tile([self.CT2.z0[0], self.plasma.z0[0,1], self.plasma.z0[0,3]], (len(self.CT2.get_network()),1) ))
+
         # frequency slicing (if any)
         plasma = self.plasma[freq]
         CT1 = self.CT1.get_network()[freq]
         CT2 = self.CT2.get_network()[freq]
             
         # connect the network together       
+
         temp1 = rf.connect(plasma, 0, CT1, 1)
         temp2 = rf.innerconnect(temp1, 1, 4) # watch out ! plasma ports 0 & 2 to RDL (TOPICA indexing)
+
         network = rf.innerconnect(rf.connect(temp2, 0, CT2, 1), 0, 3)
         network.name = 'antenna'
         return(network)
@@ -114,15 +119,18 @@ class ResonantDoubleLoop(object):
         
         success = False
         while success == False:
+
             # a random number centered on 70 pF +/- 50pF
             C0 = 1e-12*(70 + (-1+2*sp.random.rand(4)))
             
+
             sol = sp.optimize.root(fun=self._match_function, x0=C0, 
                                        args=(power_in, phase_in, f_match, Z_match))
             success = sol.success
             
             print(success, sol.x/1e-12)
                 
+
             for Cm in sol.x:
                 if (Cm < 12e-12) or (Cm > 200e-12):
                     success = False
@@ -158,6 +166,7 @@ class ResonantDoubleLoop(object):
         self.C = C
         
         # create the antenna network with the given capacitor values
+
         network = self.get_network() 
         
         # optimization target
@@ -172,6 +181,8 @@ class ResonantDoubleLoop(object):
 
         return(np.asarray(y))
         
+
+
     def get_power_waves(self, power_in, phase_in):
         '''
         Returns the input power waves from power and phase excitations.        
