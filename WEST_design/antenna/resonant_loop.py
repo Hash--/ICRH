@@ -166,7 +166,6 @@ class ResonantDoubleLoop(object):
         self.C = C
         
         # create the antenna network with the given capacitor values
-
         network = self.get_network() 
         
         # optimization target

@@ -118,7 +118,6 @@ class ConjugateT(object):
         # 1-CB-0 ** 2 |
         return(rf.connect(rf.connect(self.circuit,1, capa_H,0),2, capa_B,0))
     
-        
     def load(self, Z_plasma):
         """
         Load a the conjugate-T with a plasma impedance(s) and return 
@@ -165,15 +164,18 @@ class ConjugateT(object):
     
         # Convert the load impedances into networks
         if np.isscalar(Z_plasma):
-            Z_plasma = np.tile(Z_plasma, 2)
+            Z_plasma = np.full(2, Z_plasma)
         
         if np.shape(Z_plasma) == (2,):  
             # convert Z into S with the bridge characteristic impedance
-            S_plasma_H = rf.z2s(Z_plasma[0]*np.ones((len(freq),1,1)), z0=z0_RDL_H)
-            S_plasma_B = rf.z2s(Z_plasma[1]*np.ones((len(freq),1,1)), z0=z0_RDL_B)
+            #S_plasma_H = rf.z2s(Z_plasma[0]*np.ones((len(freq),1,1)), z0=z0_RDL_H)
+            #S_plasma_B = rf.z2s(Z_plasma[1]*np.ones((len(freq),1,1)), z0=z0_RDL_B)
                 
-            load_H = rf.Network(frequency=freq, s=S_plasma_H, z0=z0_RDL_H)
-            load_B = rf.Network(frequency=freq, s=S_plasma_B, z0=z0_RDL_B)
+            #load_H = rf.Network(frequency=freq, s=S_plasma_H, z0=z0_RDL_H)
+            #load_B = rf.Network(frequency=freq, s=S_plasma_B, z0=z0_RDL_B)
+
+            load_H = rf.Network.from_z(np.full((len(freq),1,1), Z_plasma[0]), z0=z0_RDL_H, frequency=freq)
+            load_B = rf.Network.from_z(np.full((len(freq),1,1), Z_plasma[1]), z0=z0_RDL_B, frequency=freq)
             
             return(rf.connect(rf.connect(self.get_network(),1,load_H,0),1, load_B, 0))
         
