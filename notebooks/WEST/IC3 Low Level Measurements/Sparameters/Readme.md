@@ -19,7 +19,7 @@ Le cable 1 était défecteux et a été remplacé par un câble neuf le 14/01/20
 ### Solution 1
 `Droit_Match55.5MHz_solution1`
 ### Solution 2
-`Droit_Match55.5MHz_solution2
+`Droit_Match55.5MHz_solution2`
 
 ------------------------------------------------------
 
