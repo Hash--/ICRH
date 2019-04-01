@@ -6,13 +6,26 @@
 from control_room import *
 import numpy as np
 
+pulses = [54091, 54092]
+
+sigs_general = [signals['Ip'], 
+    signals['nl'],
+    signals['LH_P_tot'],
+    signals['IC_P_tot']]
+
+fig, axes = scope(pulses, sigs_general, do_smooth=False)
+axes[-1].set_xlim(0, 8)
+axes[0].legend()
+
+
+
 # %%npulse of 06/12/2018
 pulses = [54095, 54108,  # LH only 
           54102,  # Q2 
           54105,  # Q1
           ]
 # %%
-pulses = [53259]
+pulses = [53872]
 
 sigs_general = [signals['Ip'], 
         signals['nl'],
