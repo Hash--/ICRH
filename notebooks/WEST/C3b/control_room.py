@@ -153,7 +153,15 @@ signals = {
     'Te2': {'name': None, 'fun': 'ECE_2', 'unit': 'eV', 'label': 'Temperature (ECE)'},
     'Te3': {'name': None, 'fun': 'ECE_3', 'unit': 'eV', 'label': 'Temperature (ECE)'},
     'Te4': {'name': None, 'fun': 'ECE_4', 'unit': 'eV', 'label': 'Temperature (ECE)'},
-
+    ## Langmuir probes
+    'Langmuir_LHCD1': {'name': 'GISLH%1', 'unit': 'mA', 'label':'Ion saturation current on the LHCD launcher probes #1'},
+    'Langmuir_LHCD2': {'name': 'GISLH%2', 'unit': 'mA', 'label':'Ion saturation current on the LHCD launcher probes #2'},
+    'Langmuir_LHCD3': {'name': 'GISLH%3', 'unit': 'mA', 'label':'Ion saturation current on the LHCD launcher probes #3'},
+    'Langmuir_LHCD4': {'name': 'GISLH%4', 'unit': 'mA', 'label':'Ion saturation current on the LHCD launcher probes #4'},
+    'Langmuir_LHCD5': {'name': 'GISLH%5', 'unit': 'mA', 'label':'Ion saturation current on the LHCD launcher probes #5'},
+    'Langmuir_LHCD6': {'name': 'GISLH%6', 'unit': 'mA', 'label':'Ion saturation current on the LHCD launcher probes #6'},
+    'Langmuir_LHCD7': {'name': 'GISLH%7', 'unit': 'mA', 'label':'Ion saturation current on the LHCD launcher probes #7'},
+    'Langmuir_LHCD8': {'name': 'GISLH%8', 'unit': 'mA', 'label':'Ion saturation current on the LHCD launcher probes #8'},
     }
 
 def smooth(y, window_length=51, polyorder=3):
