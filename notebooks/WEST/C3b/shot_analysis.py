@@ -6,9 +6,51 @@
 from control_room import *
 import numpy as np
 
-pulses = [54091, 54092]
+pulses = [88]
 
-sigs_general = [signals['Ip'], 
+sigs_general = [
+    #signals['IC_P_Q1_left_fwd'],
+    #signals['IC_P_Q1_left_ref'],
+    #signals['IC_P_Q2_left_fwd'],
+    #signals['IC_P_Q2_left_ref'],
+    #signals['IC_P_Q4_left_fwd'],
+    #signals['IC_P_Q4_left_ref'],   
+
+    #signals['IC_PCS_Power_Q1'],
+    #signals['IC_PCS_Power_Q2'],
+    #signals['IC_PCS_Power_Q4'],
+    #signals['IC_PCS_Phase_Q1'],
+    #signals['IC_PCS_Phase_Q2'],
+    #signals['IC_PCS_Phase_Q4'],
+    
+    signals['IC_Voltage_left_upper_Q1'],
+    signals['IC_Voltage_left_lower_Q1'],
+    signals['IC_Voltage_right_upper_Q1'],
+    signals['IC_Voltage_right_lower_Q1'],
+    
+    # signals['IC_Rc_Q1_left'],
+    # signals['IC_Rc_Q1_right'],
+    # signals['IC_Rc_Q2_left'],
+    # signals['IC_Rc_Q2_right'],
+    # signals['IC_Rc_Q4_left'],
+    # signals['IC_Rc_Q4_right'],
+    
+    #signals['IC_PCS_interdiction_Q1'],
+    #signals['IC_PCS_interdiction_Q2'],
+    #signals['IC_PCS_interdiction_Q4'],
+    ]
+
+fig, axes = scope(pulses, sigs_general, do_smooth=False)
+axes[-1].set_xlim(0, 20)
+axes[0].legend()
+
+
+# %%
+pulses = [53778]
+
+sigs_general = [
+        signals['ne'],
+        signals['Te'],
     signals['nl'],
     signals['LH_P_tot'],
     signals['IC_P_tot']]
