@@ -24,7 +24,8 @@ class ConjugateT(object):
     
     """
 
-    def __init__(self, bridge, imp_tr=None, window=None, C=[60e-12, 60e-12], capacitor_model='equivalent', name='CT'):
+    def __init__(self, bridge, imp_tr=None, window=None, C=[60e-12, 60e-12], 
+                 capacitor_model='equivalent', name='CT'):
         """
         Resonant Loop Constructor.
                 
@@ -174,8 +175,10 @@ class ConjugateT(object):
             #load_H = rf.Network(frequency=freq, s=S_plasma_H, z0=z0_RDL_H)
             #load_B = rf.Network(frequency=freq, s=S_plasma_B, z0=z0_RDL_B)
 
-            load_H = rf.Network.from_z(np.full((len(freq),1,1), Z_plasma[0]), z0=z0_RDL_H, frequency=freq)
-            load_B = rf.Network.from_z(np.full((len(freq),1,1), Z_plasma[1]), z0=z0_RDL_B, frequency=freq)
+            load_H = rf.Network.from_z(np.full((len(freq),1,1), Z_plasma[0]), 
+                                       z0=z0_RDL_H, frequency=freq)
+            load_B = rf.Network.from_z(np.full((len(freq),1,1), Z_plasma[1]), 
+                                       z0=z0_RDL_B, frequency=freq)
             
             return(rf.connect(rf.connect(self.get_network(),1,load_H,0),1, load_B, 0))
         
@@ -211,24 +214,48 @@ class ConjugateT(object):
             Resulting network (2 ports)
         
         """
+        # # Previous version. Network was built from Z -> S 
+        # if self.capacitor_model is 'ideal':
+        #     Z_capacitor = 1./(1j*C*2*np.pi*self.frequency.f)
+        # elif self.capacitor_model is 'equivalent':
+        #     Z_C_serie = 1./(1j*C*2*np.pi*self.frequency.f)
+        #     Z_R_serie = 0.01 # Ohm
+        #     Z_L_serie = 1j*(24e-9)*2*np.pi*self.frequency.f # 24 nH serie inductance
+        #     Z_R_parallel = 20e6 # Ohm
+        #     Z_serie = Z_C_serie + Z_R_serie + Z_L_serie  
+        #     Z_capacitor = (Z_serie * Z_R_parallel)/(Z_serie + Z_R_parallel)
+        
+        # # 2-port series capacity
+        # S_capacitor = np.array([[Z_capacitor, np.tile(2*z0, Z_capacitor.shape)],
+        #                         [np.tile(2*z0, Z_capacitor.shape), Z_capacitor]]).T \
+        #               / ((Z_capacitor + 2*z0)*np.ones((2,2,len(Z_capacitor)))).T 
+        
+        # capacitor = rf.Network(frequency=self.frequency, s=S_capacitor, z0=z0)
+        # return(capacitor)
+        
+        line = rf.media.DefinedGammaZ0(frequency=self.frequency, z0=z0)
         if self.capacitor_model is 'ideal':
-            Z_capacitor = 1./(1j*C*2*np.pi*self.frequency.f)
+            capacitor = line.capacitor(C)
+            
         elif self.capacitor_model is 'equivalent':
-            Z_C_serie = 1./(1j*C*2*np.pi*self.frequency.f)
-            Z_R_serie = 0.01 # Ohm
-            Z_L_serie = 1j*(24e-9)*2*np.pi*self.frequency.f # 24 nH serie inductance
-            Z_R_parallel = 20e6 # Ohm
-            Z_serie = Z_C_serie + Z_R_serie + Z_L_serie  
-            Z_capacitor = (Z_serie * Z_R_parallel)/(Z_serie + Z_R_parallel)
+            R_serie = 0.01 # Ohm
+            L_serie = 24e-9 # H
+            capacitor = line.resistor(R_serie) ** line.inductor(L_serie) ** line.capacitor(C)
+            
+        elif self.capacitor_model is 'advanced':
+            R=1e-2  # Ohm
+            L=29.9  # nH
+            R1=1e-2  # Ohm
+            C1=25.7  # pF
+            L1=2.4  # nH
+                    
+            pre = line.resistor(R1) ** line.inductor(L1*1e-9) ** line.shunt_capacitor(C1*1e-12)
+            post= line.shunt_capacitor(C1*1e-12) ** line.resistor(R1) ** line.inductor(L1*1e-9)
+            cap = line.resistor(R) ** line.inductor(L*1e-9) ** line.capacitor(C)
         
-        # 2-port series capacity
-        S_capacitor = np.array([[Z_capacitor, np.tile(2*z0, Z_capacitor.shape)],
-                                [np.tile(2*z0, Z_capacitor.shape), Z_capacitor]]).T \
-                      / ((Z_capacitor + 2*z0)*np.ones((2,2,len(Z_capacitor)))).T 
-        
-        capacitor = rf.Network(frequency=self.frequency, s=S_capacitor, z0=z0)
-        return(capacitor)    
-        
+            capacitor = pre ** cap ** post 
+
+        return(capacitor)
         
     def match(self, f_match=50e6, z_load=1.0+30*1j, z_match=30+0*1j):
         """
@@ -236,12 +263,11 @@ class ConjugateT(object):
         
         Parameters
         ----------
-        C0 = [C0H,C0B]: 
-            capacitor values starting point
         f_match: (default: 50 MHz)
             matching frequency in Hz
         z_load: scalar, 2-element array or 2x2 array (default: 1+30j)
             complex impedance for both bridge outputs
+        z_match: scalar, matching impedance (default: 30 ohm)
         
         Returns
         ----------
@@ -250,29 +276,35 @@ class ConjugateT(object):
         success = False
         while success == False:
             # generate a random capacitor sets, centered on 70pF +/-40pF
-            C0 = 70e-12 + (-1 + 2*scipy.random.rand(2))*40e-12
-            sol = scipy.optimize.root(self._optim_fun_single_RL, C0, args=(f_match, z_load, z_match) ) # 60pF as a starting point
+            # values expressed in pF
+            C0_pF = 70 + (-1 + 2*scipy.random.rand(2))*40
+            # use root if _optim_fun returns a vector, but then not bounds
+            sol = scipy.optimize.root(self._optim_fun_single_RL, C0_pF, 
+                                      args=(f_match, z_load, z_match)) 
+            # sol = scipy.optimize.minimize(self._optim_fun_single_RL, C0_pF, 
+            #                           args=(f_match, z_load, z_match),
+            #                           bounds=((12,200),(12,200))) 
             success = sol.success
-            print(success, sol.x/1e-12)
+            print(success, sol.x)
                 
             for idm,Cm in enumerate(sol.x):
-                if (Cm < 12e-12) or (Cm > 200e-12):
+                if (Cm < 12) or (Cm > 200):
                     success = False
                     print('Bad solution found (out of range capacitor) ! Re-doing...')
 
-        self.C = sol.x            
+        self.C = sol.x*1e-12            
         return(sol)
 
-    def _optim_fun_single_RL(self, C, f_match, z_load, z_match):
+    def _optim_fun_single_RL(self, C_pF, f_match, z_load, z_match):
         """
         Return the match conditions at the
-        C=[C1,C2]
+        C=[C1,C2] in pF
         RL : ResonantLoop class
         f_match
         z_load 
         
         """
-        self.C = C#(self, C)
+        self.C = C_pF * 1e-12
         
         loaded_RL = self.load(z_load)
         
@@ -280,8 +312,10 @@ class ConjugateT(object):
         
         Z11_re = loaded_RL.z_re[index_f_match].squeeze() # 100 = ~ 50 MHz (mid-band bins point)
         Z11_im = loaded_RL.z_im[index_f_match].squeeze()
-        y = [Z11_re - np.real(z_match), Z11_im - np.imag(z_match)]
-    
+        # residuals
+        y = [Z11_re - np.real(z_match),  # vector return, for root
+              Z11_im - np.imag(z_match)]
+        # y = (Z11_re - np.real(z_match))**2 + (Z11_im - np.imag(z_match))**2
         return(y)    
         
 

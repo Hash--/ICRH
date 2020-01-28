@@ -113,32 +113,28 @@ class ResonantDoubleLoop(object):
         sol: scipy.optimize.solution
             Solution found
             
-        """
-        bounds = sp.optimize.Bounds([20e-12, 20e-12, 20e-12, 20e-12], 
-                                    [120e-12, 120e-12, 120e-12, 120e-12])
-        
+        """       
         success = False
         while success == False:
 
             # a random number centered on 70 pF +/- 50pF
-            C0 = 1e-12*(70 + (-1+2*sp.random.rand(4)))
-            
+            C0 = 70 + (-1 + 2*np.random.rand(4))*40
 
-            sol = sp.optimize.root(fun=self._match_function, x0=C0, 
-                                       args=(power_in, phase_in, f_match, Z_match))
+            sol = sp.optimize.least_squares(fun=self._match_function, x0=C0, 
+                                       args=(power_in, phase_in, f_match, Z_match),
+                                       bounds=(15,150)
+                                       )
             success = sol.success
-            
-            print(success, sol.x/1e-12)
+            print(success, sol.x)
                 
-
             for Cm in sol.x:
-                if (Cm < 12e-12) or (Cm > 200e-12):
+                if np.isclose(sol.x, 12).any() or np.isclose(sol.x, 150).any(): #(Cm < 12) or (Cm > 150):
                     success = False
                     print('Bad solution found (out of range capacitor) ! Re-doing...')
     
-        print('Solution found : C={}'.format(sol.x/1e-12))
+        print('Solution found : C={}'.format(sol.x))
         # Apply the solution         
-        self.C = sol.x
+        self.C = sol.x*1e-12
         return(sol)        
         
     def _match_function(self, C, power_in, phase_in, f_match, Z_match):
@@ -148,7 +144,7 @@ class ResonantDoubleLoop(object):
         Parameters
         -----------
         C = [C1H, C1B, C2H, C2B] :
-            capacitor values in F
+            capacitor values in pF
         a_in=[a1, a2] : 2 elements array
             Power waves input
         f_match : number
@@ -163,7 +159,7 @@ class ResonantDoubleLoop(object):
              Matching criteria.
         
         """
-        self.C = C
+        self.C = C * 1e-12
         
         # create the antenna network with the given capacitor values
         network = self.get_network() 
